@@ -114,7 +114,8 @@ def calc_gcen_coords(glong, glat, dist, R0=__R0,
     x = Rgal * -cos_az
     y = Rgal * sin_az
 
-    return x, y, Rgal, cos_az, sin_az
+    # return x, y, Rgal, cos_az, sin_az
+    return x, y
 
 
 def krige_UpecVpec(x, y, krige, Upec_var_threshold, Vpec_var_threshold,
@@ -238,7 +239,8 @@ def nominal_params(glong=None, glat=None, dist=None,
     """
     if use_kriging and glong is not None and glat is not None and dist is not None:
         # Calculate galactocentric positions
-        x, y, Rgal, cos_az, sin_az = calc_gcen_coords(
+        # x, y, Rgal, cos_az, sin_az = calc_gcen_coords(
+        x, y = calc_gcen_coords(
             glong, glat, dist,
             R0=__R0, Zsun=__Zsun, roll=__roll, use_Zsunroll=True)
         # Calculate individual Upec and Vpec at source location(s)
@@ -252,7 +254,7 @@ def nominal_params(glong=None, glat=None, dist=None,
         Vpec = __Vpec
         Upec_var = __Upec_var
         Vpec_var = __Vpec_var
-        Rgal = cos_az = sin_az = None
+        # Rgal = cos_az = sin_az = None
 
     params = {
         "R0": __R0,
@@ -268,7 +270,8 @@ def nominal_params(glong=None, glat=None, dist=None,
         "a2": __a2,
         "a3": __a3,
     }
-    return params, Rgal, cos_az, sin_az
+    # return params, Rgal, cos_az, sin_az
+    return params
 
 
 def resample_params(kde, size=None, nom_params=None, use_kriging=False):
