@@ -74,7 +74,7 @@ class Worker:
                 glong=glong, glat=glat, dist=dist_grid, use_kriging=use_kriging)
         elif not use_kriging:
             self.nominal_params = self.rotcurve_module.nominal_params()
-            # self.Rgal = self.cos_az = self.sin_az = None
+            self.Rgal = self.cos_az = self.sin_az = None
         else:
             raise ValueError("kriging is only supported for 'cw21_rotcurve'")
 
@@ -108,7 +108,7 @@ class Worker:
         if self.rotcurve == "cw21_rotcurve":
             grid_vlsrs = self.rotcurve_module.calc_vlsr(
                 self.glong_grid, self.glat, self.dist_grid,
-                # Rgal=self.Rgal, cos_az=self.cos_az, sin_az=self.sin_az,
+                Rgal=self.Rgal, cos_az=self.cos_az, sin_az=self.sin_az,
                 peculiar=self.peculiar, **params)
         elif self.rotcurve == "reid19_rotcurve":
             grid_vlsrs = self.rotcurve_module.calc_vlsr(
