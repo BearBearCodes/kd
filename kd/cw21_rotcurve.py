@@ -47,24 +47,12 @@ __a2 = 0.977
 __a3 = 1.626
 __Zsun = 5.399
 __roll = -0.011
-
 #
 # IAU defined LSR
 #
 __Ustd = 10.27
 __Vstd = 15.32
 __Wstd = 7.74
-
-# Open statement outside function does not help reduce memory usage
-# and I have to call it inside the function anyway
-# # krigefile contains: full KDE + KDEs of each component (e.g. "R0", "Zsun", etc.)
-# #                     + kriging function + kriging thresholds
-# krigefile = os.path.join(os.path.dirname(__file__), "cw21_kde_krige.pkl")
-# with open(krigefile, "rb") as f:
-#     file = dill.load(f)
-#     krige = file["krige"]
-#     Upec_var_threshold = file["Upec_var_threshold"]
-#     Vpec_var_threshold = file["Vpec_var_threshold"]
 
 
 def calc_gcen_coords(glong, glat, dist, R0=__R0,
@@ -126,7 +114,6 @@ def krige_UpecVpec(x, y, Upec_avg=__Upec, Vpec_avg=__Vpec,
     Estimates the peculiar radial velocity (positive toward GC) and
     tangential velocity (positive in direction of galactic rotation)
     at a given (x, y) position using kriging.
-    Requires tvw's kriging program https://github.com/tvwenger/kriging
 
     Parameters:
       x, y :: scalars or arrays of scalars
