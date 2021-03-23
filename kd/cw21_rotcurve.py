@@ -120,9 +120,7 @@ def calc_gcen_coords(glong, glat, dist, R0=__R0,
     x = Rgal * -cos_az
     y = Rgal * sin_az
 
-    # return x, y, Rgal, cos_az, sin_az
-    return x, y
-
+    return x, y, Rgal, cos_az, sin_az
 
 def krige_UpecVpec(x, y, Upec_avg=__Upec, Vpec_avg=__Vpec,
                    var_Upec_avg=__Upec_var, var_Vpec_avg=__Vpec_var):
@@ -147,17 +145,17 @@ def krige_UpecVpec(x, y, Upec_avg=__Upec, Vpec_avg=__Vpec,
         Variance of Upec_avg and Vpec_avg (km^2/s^2)
 
     Returns: Upec, Upec_var, Vpec, Vpec_var
-      Upec :: array of scalars
+      Upec :: scalar or array of scalars
         Peculiar radial velocity of source toward galactic center (km/s)
 
-      Upec_var :: array of scalars
+      Upec_var :: scalar or array of scalars
         Variance of Upec (km^2/s^2)
 
-      Vpec :: array of scalars
+      Vpec :: scalar or array of scalars
         Peculiar tangential velocity of source in
         direction of galactic rotation (km/s)
 
-      Vpec_var :: array of scalars
+      Vpec_var :: scalar or array of scalars
         Variance of Vpec (km^2/s^2)
     """
     # krigefile contains: full KDE + KDEs of each component (e.g. "R0", "Zsun", etc.)
@@ -165,7 +163,8 @@ def krige_UpecVpec(x, y, Upec_avg=__Upec, Vpec_avg=__Vpec,
     krigefile = os.path.join(os.path.dirname(__file__), "cw21_kde_krige.pkl")
     with open(krigefile, "rb") as f:
         file = dill.load(f)
-        krige = file["krige"]
+        Upec_krige = file["Upec_krige"]
+        Vpec_krige = file["Vpec_krige"]
         Upec_var_threshold = file["Upec_var_threshold"]
         Vpec_var_threshold = file["Vpec_var_threshold"]
         file = None  # free up resources
@@ -174,8 +173,14 @@ def krige_UpecVpec(x, y, Upec_avg=__Upec, Vpec_avg=__Vpec,
     # (Rotate 90 deg CW, Sun is on +y-axis)
     x, y = y, -x
 
+    # Check inputs
+    input_scalar = np.isscalar(x) and np.isscalar(y)
+    x, y  = np.atleast_1d(x, y)
+    interp_pos = np.vstack((x.flatten(), y.flatten())).T
+
     # Calculate expected Upec and Vpec at source location(s)
-    Upec, Upec_var, Vpec, Vpec_var = krige(x, y)
+    Upec, Upec_var = Upec_krige.interp(interp_pos)
+    Vpec, Vpec_var = Vpec_krige.interp(interp_pos)
     Upec = Upec.reshape(np.shape(x))
     Upec_var = Upec_var.reshape(np.shape(x))
     Vpec = Vpec.reshape(np.shape(x))
@@ -190,8 +195,10 @@ def krige_UpecVpec(x, y, Upec_avg=__Upec, Vpec_avg=__Vpec,
     Vpec_var[Vpec_mask] = var_Vpec_avg
 
     # Free up resources
-    krige = Upec_var_threshold = Vpec_var_threshold = None
+    Upec_krige = Vpec_krige = Upec_var_threshold = Vpec_var_threshold = None
 
+    if input_scalar:
+      return Upec[0], Upec_var[0], Vpec[0], Vpec_var[0]
     return Upec, Upec_var, Vpec, Vpec_var
 
 
@@ -224,8 +231,7 @@ def nominal_params(glong=None, glat=None, dist=None, use_kriging=False):
     """
     if use_kriging and glong is not None and glat is not None and dist is not None:
         # Calculate galactocentric positions
-        # x, y, Rgal, cos_az, sin_az = calc_gcen_coords(
-        x, y = calc_gcen_coords(
+        x, y, Rgal, cos_az, sin_az = calc_gcen_coords(
             glong, glat, dist,
             R0=__R0, Zsun=__Zsun, roll=__roll, use_Zsunroll=True)
         # Calculate individual Upec and Vpec at source location(s)
@@ -238,7 +244,7 @@ def nominal_params(glong=None, glat=None, dist=None, use_kriging=False):
         Vpec = __Vpec
         Upec_var = __Upec_var
         Vpec_var = __Vpec_var
-        # Rgal = cos_az = sin_az = None
+        Rgal = cos_az = sin_az = None
 
     params = {
         "R0": __R0,
@@ -254,8 +260,7 @@ def nominal_params(glong=None, glat=None, dist=None, use_kriging=False):
         "a2": __a2,
         "a3": __a3,
     }
-    # return params, Rgal, cos_az, sin_az
-    return params
+    return params, Rgal, cos_az, sin_az
 
 
 def resample_params(kde, size=None, nom_params=None, use_kriging=False):
@@ -438,19 +443,19 @@ def calc_vlsr(glong, glat, dist, Rgal=None, cos_az=None, sin_az=None,
       vlsr :: scalar or array of scalars
         LSR velocity (km/s).
     """
-    is_print = False
+    is_print = True
     if is_print:
-        print("glong, glat, dist in calc_vlsr", np.shape(glong), np.shape(glat), np.shape(dist))
+        print("glong, glat, dist in calc_vlsr",
+              np.shape(glong), np.shape(glat), np.shape(dist))
     input_scalar = np.isscalar(glong) and np.isscalar(glat) and np.isscalar(dist)
     glong, glat, dist = np.atleast_1d(glong, glat, dist)
     cos_glong = np.cos(np.deg2rad(glong))
     sin_glong = np.sin(np.deg2rad(glong))
     cos_glat = np.cos(np.deg2rad(glat))
     sin_glat = np.sin(np.deg2rad(glat))
-    # print("glong shape", np.shape(glong))
     #
     if Rgal is None or cos_az is None or sin_az is None:
-        print("Calculating Rgal in calc_vlsr") if is_print else None
+        if is_print: print("Calculating Rgal in calc_vlsr")
         # Convert distance to Galactocentric, catch small Rgal
         Rgal = kd_utils.calc_Rgal(glong, glat, dist, R0=R0,
                                   Zsun=Zsun, roll=roll, use_Zsunroll=True)
@@ -484,7 +489,8 @@ def calc_vlsr(glong, glat, dist, Rgal=None, cos_az=None, sin_az=None,
     vYg = vR * sin_az + vAz * cos_az
     vZg = vZ
     if is_print:
-        print("1st vXg, vYg, vZg in calc_vlsr", np.shape(vXg), np.shape(vYg), np.shape(vZg))
+        print("1st vXg, vYg, vZg in calc_vlsr",
+              np.shape(vXg), np.shape(vYg), np.shape(vZg))
     #
     # Convert to barycentric
     #
@@ -492,7 +498,8 @@ def calc_vlsr(glong, glat, dist, Rgal=None, cos_az=None, sin_az=None,
     Y = dist * cos_glat * sin_glong
     Z = dist * sin_glat
     if is_print:
-        print("X, Y, Z in calc_vlsr", np.shape(X), np.shape(Y), np.shape(Z))
+        print("X, Y, Z in calc_vlsr",
+              np.shape(X), np.shape(Y), np.shape(Z))
     # useful constants
     sin_tilt = Zsun / 1000.0 / R0
     cos_tilt = np.cos(np.arcsin(sin_tilt))
@@ -503,7 +510,8 @@ def calc_vlsr(glong, glat, dist, Rgal=None, cos_az=None, sin_az=None,
     vYg = vYg - theta0 - Vsun
     vZg = vZg - Wsun
     if is_print:
-        print("2nd vXg, vYg, vZg in calc_vlsr", np.shape(vXg), np.shape(vYg), np.shape(vZg))
+        print("2nd vXg, vYg, vZg in calc_vlsr",
+              np.shape(vXg), np.shape(vYg), np.shape(vZg))
     # correct tilt and roll of Galactic midplane
     vXg1 = vXg * cos_tilt - vZg * sin_tilt
     vYg1 = vYg
@@ -512,16 +520,14 @@ def calc_vlsr(glong, glat, dist, Rgal=None, cos_az=None, sin_az=None,
     vYh = vYg1 * cos_roll + vZg1 * sin_roll
     vZh = -vYg1 * sin_roll + vZg1 * cos_roll
     vbary = (X * vXh + Y * vYh + Z * vZh) / dist
-    if is_print:
-        print("vbary in calc_vlsr", np.shape(vbary))
+    if is_print: print("vbary in calc_vlsr", np.shape(vbary))
     #
     # Convert to IAU-LSR
     #
     vlsr = (
         vbary + (__Ustd * cos_glong + __Vstd * sin_glong) * cos_glat + __Wsun * sin_glat
     )
+    if is_print: print("final vlsr shape", np.shape(vlsr))
     if input_scalar:
         return vlsr[0]
-    if is_print:
-        print("final vlsr shape", np.shape(vlsr))
     return vlsr

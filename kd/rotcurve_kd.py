@@ -304,7 +304,7 @@ def rotcurve_kd(glong, glat, velo, velo_err=None, velo_tol=0.1,
     #         print("Number of rotcurve_kd nodes:", pool.nodes)
     #         results = pool.map(worker.work, range(size))
     with mp.Pool(processes=processes) as pool:
-        print("Number of rotcurve_kd nodes:", pool._processes)
+        print("Number of rotcurve_kd processes:", pool._processes)
         results = pool.map(worker.work, range(size))
     # Free memory even though pool should be closed already
     print("Closing pool in rotcurve_kd")
