@@ -103,10 +103,8 @@ def calc_gcen_coords(glong, glat, dist, R0=__R0,
         Cosine and sine of Galactocentric azimuth (rad)
     """
     glong, glat, dist = np.atleast_1d(glong, glat, dist)
-    print("R0, Zsun, roll shape:", np.shape(R0), np.shape(Zsun), np.shape(roll))
     if np.shape(glong) != np.shape(dist):
         glong = np.array([glong, ] * len(dist))
-    print("glong, dist shape:", np.shape(glong), np.shape(dist))
     Rgal = kd_utils.calc_Rgal(
         glong, glat, dist, R0=R0,
         Zsun=Zsun, roll=roll, use_Zsunroll=use_Zsunroll)
@@ -443,7 +441,7 @@ def calc_vlsr(glong, glat, dist, Rgal=None, cos_az=None, sin_az=None,
       vlsr :: scalar or array of scalars
         LSR velocity (km/s).
     """
-    is_print = True
+    is_print = False
     if is_print:
         print("glong, glat, dist in calc_vlsr",
               np.shape(glong), np.shape(glat), np.shape(dist))
