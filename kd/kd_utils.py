@@ -82,7 +82,7 @@ def calc_Rgal(glong, glat, dist, R0=__R0,
     """
     if use_Zsunroll:
         # useful values
-        tilt = 0.001 * (Zsun / R0)  # tilt of galactic midplane
+        tilt = np.arctan(0.001 * (Zsun / R0))  # tilt of galactic midplane
         cos_glat = np.cos(np.deg2rad(glat))
         cos_roll = np.cos(np.deg2rad(roll))
         sin_roll = np.sin(np.deg2rad(roll))
@@ -91,8 +91,8 @@ def calc_Rgal(glong, glat, dist, R0=__R0,
         Yb = dist * cos_glat * np.sin(np.deg2rad(glong))
         Zb = dist * np.sin(np.deg2rad(glat))
         # galactocentric frame
-        Xg = (Xb - R0) * np.cos(np.deg2rad(tilt)) + \
-             (sin_roll * Yb + cos_roll * Zb) * np.sin(np.deg2rad(tilt))
+        Xg = (Xb - R0) * np.cos(tilt) + \
+             (sin_roll * Yb + cos_roll * Zb) * np.sin(tilt)
         Yg = Yb * cos_roll - sin_roll * Zb
         Rgal = np.sqrt(Xg * Xg + Yg * Yg)
     else:
@@ -142,7 +142,7 @@ def calc_az(glong, glat, dist, R0=__R0,
     glong = glong % 360.
     if use_Zsunroll:
         # useful values
-        tilt = 0.001 * (Zsun / R0)  # tilt of galactic midplane
+        tilt = np.arctan(0.001 * (Zsun / R0))  # tilt of galactic midplane
         cos_glat = np.cos(np.deg2rad(glat))
         cos_roll = np.cos(np.deg2rad(roll))
         sin_roll = np.sin(np.deg2rad(roll))
@@ -151,8 +151,8 @@ def calc_az(glong, glat, dist, R0=__R0,
         Yb = dist * cos_glat * np.sin(np.deg2rad(glong))
         Zb = dist * np.sin(np.deg2rad(glat))
         # galactocentric frame
-        Xg = (Xb - R0) * np.cos(np.deg2rad(tilt)) + \
-             (sin_roll * Yb + cos_roll * Zb) * np.sin(np.deg2rad(tilt))
+        Xg = (Xb - R0) * np.cos(tilt) + \
+             (sin_roll * Yb + cos_roll * Zb) * np.sin(tilt)
         Yg = Yb * cos_roll - sin_roll * Zb
         az = np.rad2deg(np.arctan2(Yg, -Xg)) % 360.
     else:
@@ -165,10 +165,8 @@ def calc_az(glong, glat, dist, R0=__R0,
         cos_az[cos_az > 1.] = 1.
         cos_az[cos_az < -1.] = -1.
         az = np.rad2deg(np.arccos(cos_az))
-    #
-    # Correct azimuth in 3rd and 4th quadrants
-    #
-    az[glong > 180.] = 360. - az[glong > 180.]
+        # Correct azimuth in 3rd and 4th quadrants
+        az[glong > 180.] = 360. - az[glong > 180.]
     if input_scalar:
         return az[0]
     return az
