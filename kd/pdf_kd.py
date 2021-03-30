@@ -244,7 +244,7 @@ def pdf_kd(glong, glat, velo, velo_err=None, rotcurve='cw21_rotcurve',
             #
             # Set-up figure
             #
-            fig, axes = plt.subplots(6, figsize=(8.5, 11))
+            fig, axes = plt.subplots(7, figsize=(8.5, 11))
             axes[0].set_title(
                 r"PDFs for ($\ell$, $v$) = ("
                 "{0:.1f}".format(glong[i])+r"$^\circ$, "
@@ -257,10 +257,11 @@ def pdf_kd(glong, glat, velo, velo_err=None, rotcurve='cw21_rotcurve',
                 dist_res=rotcurve_dist_res,
                 dist_max=rotcurve_dist_max,
                 peculiar=peculiar, use_kriging=use_kriging)
-            kdtypes = ["Rgal", "Rtan", "near", "far", "distance", "tangent"]
+            kdtypes = ["Rgal", "Rtan", "near", "far",
+                       "distance", "tangent", "vlsr_tangent"]
             labels = [r"$R$ (kpc)", r"$R_{\rm tan}$ (kpc)",
-                      r"$d_{\rm near}$ (kpc)", r"$d_{\rm far}$ (kpc)",
-                      r"$d$ (kpc)", r"$d_{\rm tan}$ (kpc)"]
+                      r"$d_{\rm near}$ (kpc)", r"$d_{\rm far}$ (kpc)", r"$d$ (kpc)",
+                      r"$d_{\rm tan}$ (kpc)", r"$v_{\rm tan}$ (km s$^{-1}$)"]
             for ax, kdtype, label in zip(axes, kdtypes, labels):
                 if kdtype == 'distance':
                     is_tangent = np.isnan(kd_out['near'][i])*np.isnan(kd_out['far'][i])
