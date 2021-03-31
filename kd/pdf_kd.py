@@ -248,7 +248,7 @@ def pdf_kd(glong, glat, velo, velo_err=None, rotcurve='cw21_rotcurve',
             axes[0].set_title(
                 r"PDFs for ($\ell$, $v$) = ("
                 "{0:.1f}".format(glong[i])+r"$^\circ$, "
-                "{0:.1f}".format(velo[i])+r"km s$^{-1}$)")
+                "{0:.1f}".format(velo[i])+r" km s$^{-1}$)")
             #
             # Compute "traditional" kinematic distances
             #
