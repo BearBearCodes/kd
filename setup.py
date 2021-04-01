@@ -1,5 +1,5 @@
 """
-Copyright(C) 2017-2020 by
+Copyright(C) 2017-2021 by
 Trey V. Wenger; tvwenger@gmail.com
 
 GNU General Public License v3 (GNU GPLv3)
@@ -22,11 +22,12 @@ from setuptools import setup
 
 setup(
     name='kd',
-    version='2.0',
+    version='3.0',
     description='Kinematic distance utilities',
     author='Trey V. Wenger',
     author_email='tvwenger@gmail.com',
     packages=['kd'],
-    install_requires=['numpy', 'matplotlib', 'scipy', 'pathos'],
-    package_data={'kd':['curve_data_wise_small.sav', 'reid19_params.pkl', 'cw21_kde_krige.pkl']},
+    install_requires=['numpy', 'matplotlib', 'scipy', 'pathos', 'kriging'],
+    package_data={'kd':['curve_data_wise_small.sav',
+                        'reid19_params.pkl', 'cw21_kde_krige.pkl']},
 )
