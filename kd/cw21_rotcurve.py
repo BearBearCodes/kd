@@ -40,9 +40,7 @@ __Usun = 10.879
 __Vsun = 10.697
 __Wsun = 8.088
 __Upec = 4.907
-__Upec_var = 16.9  # * UPDATE. variance of __Upec
 __Vpec = -4.522
-__Vpec_var = 34.3  # * UPDATE. variance of __Vpec
 __a2 = 0.977
 __a3 = 1.626
 __Zsun = 5.399
@@ -162,16 +160,20 @@ def krige_UpecVpec(x, y, Upec_krige, Vpec_krige, var_threshold, resample=False,
     Upec_var = Upec_var.reshape(np.shape(x))
     Vpec = Vpec.reshape(np.shape(x))
     Vpec_var = Vpec_var.reshape(np.shape(x))
+    # print("Upec var:", Upec_var)
+    # print("Vpec var:", Vpec_var)
 
     # Use average value if component is outside well-constrained area
-    krige_mask = Upec_var * Upec_var + Vpec_var * Vpec_var > var_threshold
+    krige_mask = Upec_var + Vpec_var  > var_threshold
     Upec[krige_mask] = Upec_avg
     Vpec[krige_mask] = Vpec_avg
+    # print("krige_mask:", krige_mask)
 
     # Free up resources
     Upec_krige = Vpec_krige = var_threshold = None
 
     if input_scalar:
+      # print("kriging input is scalar")
       return Upec[0], Vpec[0]
     return Upec, Vpec
 
@@ -218,6 +220,7 @@ def nominal_params(glong=None, glat=None, dist=None, use_kriging=False,
     """
     krig_args = [glong, glat, dist, Upec_krige, Vpec_krige, var_threshold]
     if use_kriging and all(arg is not None for arg in krig_args):
+        # print("In nominal params and kriging")
         # Calculate galactocentric positions
         x, y, Rgal, cos_az, sin_az = calc_gcen_coords(
             glong, glat, dist,
@@ -231,6 +234,8 @@ def nominal_params(glong=None, glat=None, dist=None, use_kriging=False,
         Upec = __Upec
         Vpec = __Vpec
         x = y = Rgal = cos_az = sin_az = None
+    # print("nominal Upec:", Upec)
+    # print("nominal Upec shape:", np.shape(Upec))
 
     params = {
         "R0": __R0,
@@ -315,6 +320,7 @@ def resample_params(kde, size=None, use_kriging=False, x=None, y=None,
 
     krig_args = [x, y, Upec_krige, Vpec_krige, var_threshold]
     if use_kriging and all(arg is not None for arg in krig_args):
+        # print("In resample params and kriging")
         x, y, Upec_avg, Vpec_avg = np.atleast_1d(x, y, params["Upec"], params["Vpec"])
         loop_num = 0  # for looping back to beginning if num sources > size
         # Arrays to store kriging Upec and Vpec
@@ -329,6 +335,7 @@ def resample_params(kde, size=None, use_kriging=False, x=None, y=None,
                 x[:, i], y[:, i], Upec_krige, Vpec_krige, var_threshold, resample=True,
                 Upec_avg=Upec_avg[loop_num], Vpec_avg=Vpec_avg[loop_num])
             loop_num += 1
+        # print("Resampled kriging Upec:", Upec)
         # Save in dictionary
         params_orig = params
         params = {

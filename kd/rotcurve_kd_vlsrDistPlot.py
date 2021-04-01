@@ -86,8 +86,7 @@ class Worker:
                 Upec_krige=self.Upec_krige, Vpec_krige=self.Vpec_krige,
                 var_threshold=self.var_threshold)
         elif not use_kriging:
-            self.Upec_krige = self.Vpec_krige = self.var_threshold = None
-            self.x = self.y = self.Rgal = self.cos_az = self.sin_az = None
+            self.nominal_params = self.rotcurve_module.nominal_params()
         else:
             raise ValueError("kriging is only supported for 'cw21_rotcurve'")
 
@@ -345,27 +344,37 @@ def rotcurve_kd_vlsrDistPlot(glong, glat, velo, velo_err=None, velo_tol=0.1,
         # print("result[6].shape", np.shape(result[6]))
         vlsr_samples[:, snum] = result[6].flatten()
     dist_grid = dist_grid.flatten()
-    # print("vlsr_samples shape before", np.shape(vlsr_samples))
+    print("vlsr_samples shape before", np.shape(vlsr_samples))
     # print("vlsr_samples before", vlsr_samples[0:20])
     # vlsr_samples = vlsr_samples.flatten()
-    vlsr_samples = vlsr_samples[:, 0]  # Plot only 1 MC sample
-    # print("vlsr_samples shape after", np.shape(vlsr_samples))
-    # print("vlsr_samples after", vlsr_samples[0:20])
+    # Number of MC samples to plot
+    num_to_plot = 10 if size > 10 else size
+    vlsr_samples = vlsr_samples[:, 0:num_to_plot]  # Plot first 10 samples (max)
+    print("vlsr_samples shape after", np.shape(vlsr_samples))
+    print("vlsr_samples after", vlsr_samples[0:20])
     #
     # Plot vlsr vs. distance
     #
     fig, ax = plt.subplots()
-    if resample and use_kriging:
-        ax.plot(dist_grid, vlsr_samples, "k", linewidth=0.1, alpha=0.5)
-    else:
-        ax.plot(dist_grid, vlsr_samples, "k")
     # Horizontal line at observed vlsr
-    ax.axhline(velo[0], color="tab:green")
-    # Indicate points of intersection (method only works for smooth functions)
-    if not resample and not use_kriging:
-        poi_idx = np.argwhere(np.diff(np.sign(velo[0] - vlsr_samples))).flatten()
-        ax.scatter(dist_grid[poi_idx], vlsr_samples[poi_idx],
-                marker="s", color="tab:purple", zorder=100)
+    ax.axhline(velo[0], color="tab:green", zorder=50)
+    if resample and num_to_plot > 1:
+        for i in range(num_to_plot):
+            # Plot MC vlsr curve
+            ax.plot(dist_grid, vlsr_samples[:, i], "k", linewidth=0.5, alpha=0.5)
+            # TODO: debug after
+            # # Indicate points of intersection (method only works for smooth functions)
+            # poi_idx = np.argwhere(np.diff(np.sign(velo[0] - vlsr_samples[:, i]))).flatten()
+            # ax.scatter(dist_grid[poi_idx], vlsr_samples[:, poi_idx],
+            #           s=4, marker="s", color="tab:purple", zorder=100)
+    else:
+        # Plot vlsr curve
+        ax.plot(dist_grid, vlsr_samples, "k")
+        # TODO: debug after
+        # # Indicate points of intersection (method only works for smooth functions)
+        # poi_idx = np.argwhere(np.diff(np.sign(velo[0] - vlsr_samples))).flatten()
+        # ax.scatter(dist_grid[poi_idx], vlsr_samples[poi_idx],
+        #           s=4, marker="s", color="tab:purple", zorder=100)
     ax.autoscale(True)
     ax.set_title(r"($\ell$, $v$) = ("
                  "{0:.1f}".format(glong[0])+r"$^\circ$, "
@@ -375,6 +384,27 @@ def rotcurve_kd_vlsrDistPlot(glong, glat, velo, velo_err=None, velo_tol=0.1,
     fig.savefig(f"vlsrdist_{glong[0]:.2f}_{velo[0]:.1f}_krige{use_kriging}_mc{resample}.pdf",
                 bbox_inches="tight")
     plt.close(fig)
+    # fig, ax = plt.subplots()
+    # if resample and use_kriging:
+    #     ax.plot(dist_grid, vlsr_samples, "k", linewidth=0.1, alpha=0.5)
+    # else:
+    #     ax.plot(dist_grid, vlsr_samples, "k")
+    # # Horizontal line at observed vlsr
+    # ax.axhline(velo[0], color="tab:green")
+    # # Indicate points of intersection (method only works for smooth functions)
+    # if not resample and not use_kriging:
+    #     poi_idx = np.argwhere(np.diff(np.sign(velo[0] - vlsr_samples))).flatten()
+    #     ax.scatter(dist_grid[poi_idx], vlsr_samples[poi_idx],
+    #             marker="s", color="tab:purple", zorder=100)
+    # ax.autoscale(True)
+    # ax.set_title(r"($\ell$, $v$) = ("
+    #              "{0:.1f}".format(glong[0])+r"$^\circ$, "
+    #              "{0:.1f}".format(velo[0])+r" km s$^{-1}$)")
+    # ax.set_xlabel("Distance (kpc)")
+    # ax.set_ylabel(r"$v_{\scriptscriptstyle LSR}$ (km s$^{-1}$)")
+    # fig.savefig(f"vlsrdist_{glong[0]:.2f}_{velo[0]:.1f}_krige{use_kriging}_mc{resample}.pdf",
+    #             bbox_inches="tight")
+    # plt.close(fig)
     #
     # Convert back to scalars if necessary
     #

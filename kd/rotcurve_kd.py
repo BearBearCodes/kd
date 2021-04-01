@@ -83,8 +83,7 @@ class Worker:
                 Upec_krige=self.Upec_krige, Vpec_krige=self.Vpec_krige,
                 var_threshold=self.var_threshold)
         elif not use_kriging:
-            self.Upec_krige = self.Vpec_krige = self.var_threshold = None
-            self.x = self.y = self.Rgal = self.cos_az = self.sin_az = None
+            self.nominal_params = self.rotcurve_module.nominal_params()
         else:
             raise ValueError("kriging is only supported for 'cw21_rotcurve'")
 
