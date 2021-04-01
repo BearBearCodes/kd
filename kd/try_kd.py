@@ -15,7 +15,7 @@ glat = np.random.normal(loc=0.0, scale=0.5, size=2)
 velo = np.random.normal(loc=20.0, scale=20.0, size=2)
 velo_err = 10.0
 rotcurve = "cw21_rotcurve"  # the name of the script containing the rotation curve
-num_samples = 100  # number of re-samples
+num_samples = 10  # number of re-samples
 peculiar = True
 use_kriging = True
 start = time.time()
@@ -49,8 +49,8 @@ end = time.time()
 #                                )
 # end = time.time()
 
-# print(dist)
-# print(end - start)
+print(dist)
+print(end - start)
 
 # * MC KD STATS WHERE use_kriging=True AND num_samples=1000, use_peculiar=True
 # {'Rgal': 6.5679196741081505, 'Rgal_kde': <pyqt_fit.kde.KDE1D object at 0x7fe8c61163a0>,

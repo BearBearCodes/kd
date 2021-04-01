@@ -69,15 +69,25 @@ class Worker:
             # Load pickle file
             infile = os.path.join(os.path.dirname(__file__), "cw21_kde_krige.pkl")
             # infile contains: full KDE + KDEs of each component (e.g. "R0")
-            #                  + kriging function + kriging thresholds
+            #                  + kriging functions + kriging threshold
             with open(infile, "rb") as f:
-                self.kde = dill.load(f)["full"]
-            (self.nominal_params, self.Rgal,
+                file = dill.load(f)
+                self.kde = file["full"]
+                if use_kriging:
+                    self.Upec_krige = file["Upec_krige"]
+                    self.Vpec_krige = file["Vpec_krige"]
+                    self.var_threshold = file["var_threshold"]
+                else:
+                    self.Upec_krige = self.Vpec_krige = self.var_threshold = None
+                file = None  # free up resources
+            (self.nominal_params, self.x, self.y, self.Rgal,
              self.cos_az, self.sin_az) = self.rotcurve_module.nominal_params(
-                glong=glong, glat=glat, dist=dist_grid, use_kriging=use_kriging)
+                glong=glong, glat=glat, dist=dist_grid, use_kriging=use_kriging,
+                Upec_krige=self.Upec_krige, Vpec_krige=self.Vpec_krige,
+                var_threshold=self.var_threshold)
         elif not use_kriging:
-            self.nominal_params = self.rotcurve_module.nominal_params()
-            self.Rgal = self.cos_az = self.sin_az = None
+            self.Upec_krige = self.Vpec_krige = self.var_threshold = None
+            self.x = self.y = self.Rgal = self.cos_az = self.sin_az = None
         else:
             raise ValueError("kriging is only supported for 'cw21_rotcurve'")
 
@@ -92,9 +102,9 @@ class Worker:
         if self.resample:
             if self.rotcurve == "cw21_rotcurve":
                 params = self.rotcurve_module.resample_params(
-                    self.kde, size=len(self.glong),
-                    nom_params=self.nominal_params,
-                    use_kriging=self.use_kriging)
+                    self.kde, size=len(self.glong), use_kriging=self.use_kriging,
+                    x=self.x, y=self.y, Upec_krige=self.Upec_krige,
+                    Vpec_krige=self.Vpec_krige, var_threshold=self.var_threshold)
                 # Allow calculation of Rgal & az with new params
                 self.Rgal = self.cos_az = self.sin_az = None
             else:
