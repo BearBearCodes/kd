@@ -80,8 +80,8 @@ class Worker:
                 else:
                     self.Upec_krige = self.Vpec_krige = self.var_threshold = None
                 file = None  # free up resources
-            (self.nominal_params, self.x, self.y, self.Rgal,
-             self.cos_az, self.sin_az) = self.rotcurve_module.nominal_params(
+            (self.nominal_params, self.Rgal, self.cos_az,
+             self.sin_az) = self.rotcurve_module.nominal_params(
                 glong=glong, glat=glat, dist=dist_grid, use_kriging=use_kriging,
                 Upec_krige=self.Upec_krige, Vpec_krige=self.Vpec_krige,
                 var_threshold=self.var_threshold)
@@ -100,12 +100,12 @@ class Worker:
         #
         if self.resample:
             if self.rotcurve == "cw21_rotcurve":
-                params = self.rotcurve_module.resample_params(
-                    self.kde, size=len(self.glong), use_kriging=self.use_kriging,
-                    x=self.x, y=self.y, Upec_krige=self.Upec_krige,
-                    Vpec_krige=self.Vpec_krige, var_threshold=self.var_threshold)
-                # Allow calculation of Rgal & az with new params
-                self.Rgal = self.cos_az = self.sin_az = None
+                (params, Rgal, cos_az, sin_az) = self.rotcurve_module.resample_params(
+                    self.kde, size=len(self.glong),
+                    glong=self.glong, glat=self.glat, dist=self.dist_grid,
+                    use_kriging=self.use_kriging,
+                    Upec_krige=self.Upec_krige, Vpec_krige=self.Vpec_krige,
+                    var_threshold=self.var_threshold)
             else:
                 params = self.rotcurve_module.resample_params(
                     size=len(self.glong))
@@ -114,13 +114,17 @@ class Worker:
         else:
             params = self.nominal_params
             velo_sample = self.velo
+            if self.rotcurve == "cw21_rotcurve":
+                Rgal = self.Rgal
+                cos_az = self.cos_az
+                sin_az = self.sin_az
         #
         # Calculate LSR velocity at each (glong, distance) point
         #
         if self.rotcurve == "cw21_rotcurve":
             grid_vlsrs = self.rotcurve_module.calc_vlsr(
                 self.glong_grid, self.glat, self.dist_grid,
-                Rgal=self.Rgal, cos_az=self.cos_az, sin_az=self.sin_az,
+                Rgal=Rgal, cos_az=cos_az, sin_az=sin_az,
                 peculiar=self.peculiar, **params)
         elif self.rotcurve == "reid19_rotcurve":
             grid_vlsrs = self.rotcurve_module.calc_vlsr(
@@ -350,8 +354,9 @@ def rotcurve_kd_vlsrDistPlot(glong, glat, velo, velo_err=None, velo_tol=0.1,
     # Number of MC samples to plot
     num_to_plot = 10 if size > 10 else size
     vlsr_samples = vlsr_samples[:, 0:num_to_plot]  # Plot first 10 samples (max)
-    print("vlsr_samples shape after", np.shape(vlsr_samples))
-    print("vlsr_samples after", vlsr_samples[0:20])
+    # print("vlsr_samples shape after", np.shape(vlsr_samples))
+    # print("vlsr_samples after", vlsr_samples[0:20])
+    print("Starting vlsr values:", vlsr_samples[0, 0:num_to_plot])
     #
     # Plot vlsr vs. distance
     #
