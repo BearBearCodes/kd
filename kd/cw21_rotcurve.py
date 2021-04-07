@@ -159,34 +159,35 @@ def krige_UpecVpec(x, y):
     #
     infile = os.path.join(os.path.dirname(__file__), "cw21_kde_krige.pkl")
     # infile contains: full KDE + KDEs of each component (e.g. "R0")
-    #                  + kriging functions + kriging threshold
+    #                  + kriging objects + convex hull object
     with open(infile, "rb") as f:
         file = dill.load(f)
         Upec_krige = file["Upec_krige"]
         Vpec_krige = file["Vpec_krige"]
-        var_threshold = file["var_threshold"]
+        hull = file["hull"]
         file = None  # free up resources
     #
     # Calculate expected Upec and Vpec differences at source location(s)
     #
     interp_pos = np.vstack((x.flatten(), y.flatten())).T
-    Upec, Upec_var = Upec_krige.interp(interp_pos, resample=False)
-    Vpec, Vpec_var = Vpec_krige.interp(interp_pos, resample=False)
-    Upec = Upec.reshape(np.shape(x))
-    Upec_var = Upec_var.reshape(np.shape(x))
-    Vpec = Vpec.reshape(np.shape(x))
-    Vpec_var = Vpec_var.reshape(np.shape(x))
+    Upec, _ = Upec_krige.interp(interp_pos, resample=False)
+    Vpec, _ = Vpec_krige.interp(interp_pos, resample=False)
     #
-    # Use average value if component is outside well-constrained area
+    # Use average value if component is outside convex hull
     # (i.e., difference is zero)
     #
-    krige_mask = Upec_var + Vpec_var  > var_threshold
-    Upec[krige_mask] = 0
-    Vpec[krige_mask] = 0
+    not_in_hull = hull.find_simplex(interp_pos) < 0
+    Upec[not_in_hull] = 0
+    Vpec[not_in_hull] = 0
+    #
+    # Reshape
+    #
+    Upec = Upec.reshape(np.shape(x))
+    Vpec = Vpec.reshape(np.shape(x))
     #
     # Free up resources
     #
-    Upec_krige = Vpec_krige = var_threshold = None
+    Upec_krige = Vpec_krige = hull = None
     #
     if input_scalar:
       return Upec[0], Vpec[0]

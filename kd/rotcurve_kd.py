@@ -66,7 +66,7 @@ class Worker:
             # Load pickle file
             infile = os.path.join(os.path.dirname(__file__), "cw21_kde_krige.pkl")
             # infile contains: full KDE + KDEs of each component (e.g. "R0")
-            #                  + kriging functions + kriging threshold
+            #                  + kriging objects + convex hull object
             with open(infile, "rb") as f:
                 self.kde = dill.load(f)["full"]
             self.nominal_params = self.rotcurve_module.nominal_params(
