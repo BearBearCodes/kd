@@ -41,7 +41,7 @@ class Worker:
     """
     def __init__(self, glong, glat, velo, velo_err, dists, glong_grid,
                  dist_grid, velo_tol, rotcurve, resample, size,
-                 peculiar, use_kriging):
+                 peculiar, use_kriging, norm):
         self.glong = glong
         self.glat = glat
         self.velo = velo
@@ -66,12 +66,12 @@ class Worker:
             # Load pickle file
             infile = os.path.join(os.path.dirname(__file__), "cw21_kde_krige.pkl")
             # infile contains: full KDE + KDEs of each component (e.g. "R0")
-            #                  + kriging objects + convex hull object
+            #                  + kriging objects + variance threshold + convex hull object
             with open(infile, "rb") as f:
                 self.kde = dill.load(f)["full"]
             self.nominal_params = self.rotcurve_module.nominal_params(
                 glong=glong, glat=glat, dist=dist_grid,
-                use_kriging=use_kriging, resample=resample)
+                use_kriging=use_kriging, norm=norm, resample=resample)
         elif not use_kriging:
             self.nominal_params = self.rotcurve_module.nominal_params()
         else:
@@ -161,7 +161,7 @@ def rotcurve_kd(glong, glat, velo, velo_err=None, velo_tol=0.1,
                 rotcurve='cw21_rotcurve',
                 dist_res=0.001, dist_min=0.001, dist_max=30.,
                 resample=False, size=1, processes=None,
-                peculiar=False, use_kriging=False):
+                peculiar=False, use_kriging=False, norm=20):
     """
     Return the kinematic near, far, and tanget distance for a
     given Galactic longitude and LSR velocity assuming
@@ -219,6 +219,10 @@ def rotcurve_kd(glong, glat, velo, velo_err=None, velo_tol=0.1,
         only supported for rotcurve = "cw21_rotcurve"
         if True, estimate individual Upec & Vpec from kriging program
         if False, use average Upec & Vpec
+
+      norm :: scalar (optional)
+        Normalization factor that determines slope of kriging to average
+        peculiar motion transition. Larger norm is steeper transition
 
     Returns: output
       output["Rgal"] :: scalar or array of scalars
@@ -285,7 +289,7 @@ def rotcurve_kd(glong, glat, velo, velo_err=None, velo_tol=0.1,
     # Initialize worker
     #
     worker = Worker(glong, glat, velo, velo_err, dists, glong_grid, dist_grid,
-                    velo_tol, rotcurve, resample, size, peculiar, use_kriging)
+                    velo_tol, rotcurve, resample, size, peculiar, use_kriging, norm)
     # if processes is None:
     #     with mp.ProcessPool() as pool:
     #         print("Number of rotcurve_kd nodes:", pool.nodes)

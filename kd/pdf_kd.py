@@ -46,7 +46,7 @@ def pdf_kd(glong, glat, velo, velo_err=None, rotcurve='cw21_rotcurve',
            rotcurve_dist_res=0.001, rotcurve_dist_max=30.,
            pdf_bins=1000, num_samples=10000, processes=None,
            plot_pdf=False, plot_prefix='pdf_',
-           peculiar=False, use_kriging=False):
+           peculiar=False, use_kriging=False, norm=20):
     """
     Return the kinematic near, far, and tanget distance and distance
     uncertainties for a given Galactic longitude and LSR velocity
@@ -103,6 +103,10 @@ def pdf_kd(glong, glat, velo, velo_err=None, rotcurve='cw21_rotcurve',
         Only supported for rotcurve = "cw21_rotcurve"
         If True, estimate individual Upec & Vpec from kriging program
         If False, use average Upec & Vpec
+
+      norm :: scalar (optional)
+        Normalization factor that determines slope of kriging to average
+        peculiar motion transition. Larger norm is steeper transition
 
     Returns: output
       output["Rgal"] :: scalar or array of scalars
@@ -194,7 +198,7 @@ def pdf_kd(glong, glat, velo, velo_err=None, rotcurve='cw21_rotcurve',
         glong, glat, velo, velo_err=velo_err, velo_tol=0.1,
         rotcurve=rotcurve, dist_res=rotcurve_dist_res, dist_min=0.01,
         dist_max=rotcurve_dist_max, resample=True, size=num_samples,
-        processes=processes, peculiar=peculiar, use_kriging=use_kriging)
+        processes=processes, peculiar=peculiar, use_kriging=use_kriging, norm=norm)
     #
     # Set up multiprocessing for fitting KDEs
     #
@@ -252,6 +256,7 @@ def pdf_kd(glong, glat, velo, velo_err=None, rotcurve='cw21_rotcurve',
             #
             # Compute "traditional" kinematic distances
             #
+            print("Computing traditional KD")
             rot_kd = rotcurve_kd(
                 glong[i], glat[i], velo[i], rotcurve=rotcurve,
                 dist_res=rotcurve_dist_res,

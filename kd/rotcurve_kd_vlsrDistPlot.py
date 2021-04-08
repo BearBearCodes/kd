@@ -44,7 +44,7 @@ class Worker:
     """
     def __init__(self, glong, glat, velo, velo_err, dists, glong_grid,
                  dist_grid, velo_tol, rotcurve, resample, size,
-                 peculiar, use_kriging):
+                 peculiar, use_kriging, norm):
         self.glong = glong
         self.glat = glat
         self.velo = velo
@@ -69,12 +69,12 @@ class Worker:
             # Load pickle file
             infile = os.path.join(os.path.dirname(__file__), "cw21_kde_krige.pkl")
             # infile contains: full KDE + KDEs of each component (e.g. "R0")
-            #                  + kriging functions + kriging threshold
+            #                  + kriging objects + variance threshold + convex hull object
             with open(infile, "rb") as f:
                 self.kde = dill.load(f)["full"]
             self.nominal_params = self.rotcurve_module.nominal_params(
                 glong=glong, glat=glat, dist=dist_grid,
-                use_kriging=use_kriging, resample=resample)
+                use_kriging=use_kriging, norm=norm, resample=resample)
         elif not use_kriging:
             self.nominal_params = self.rotcurve_module.nominal_params()
         else:
@@ -164,13 +164,11 @@ def rotcurve_kd_vlsrDistPlot(glong, glat, velo, velo_err=None, velo_tol=0.1,
                              rotcurve='cw21_rotcurve',
                              dist_res=0.001, dist_min=0.001, dist_max=30.,
                              resample=False, size=1, processes=None,
-                             peculiar=False, use_kriging=False):
+                             peculiar=False, use_kriging=False, norm=20):
     """
     Return the kinematic near, far, and tanget distance for a
     given Galactic longitude and LSR velocity assuming
     a given rotation curve.
-    Also plots the line-of-sight velocity as a function of
-    galactic distance along a given longitude and latitude.
 
     Parameters:
       glong, glat :: scalar or array of scalars
@@ -224,6 +222,10 @@ def rotcurve_kd_vlsrDistPlot(glong, glat, velo, velo_err=None, velo_tol=0.1,
         only supported for rotcurve = "cw21_rotcurve"
         if True, estimate individual Upec & Vpec from kriging program
         if False, use average Upec & Vpec
+
+      norm :: scalar (optional)
+        Normalization factor that determines slope of kriging to average
+        peculiar motion transition. Larger norm is steeper transition
 
     Returns: output
       output["Rgal"] :: scalar or array of scalars
@@ -290,7 +292,7 @@ def rotcurve_kd_vlsrDistPlot(glong, glat, velo, velo_err=None, velo_tol=0.1,
     # Initialize worker
     #
     worker = Worker(glong, glat, velo, velo_err, dists, glong_grid, dist_grid,
-                    velo_tol, rotcurve, resample, size, peculiar, use_kriging)
+                    velo_tol, rotcurve, resample, size, peculiar, use_kriging, norm)
     # if processes is None:
     #     with mp.ProcessPool() as pool:
     #         print("Number of rotcurve_kd nodes:", pool.nodes)
@@ -370,8 +372,10 @@ def rotcurve_kd_vlsrDistPlot(glong, glat, velo, velo_err=None, velo_tol=0.1,
                  "{0:.1f}".format(velo[0])+r" km s$^{-1}$)")
     ax.set_xlabel("Distance (kpc)")
     ax.set_ylabel(r"$v_{\scriptscriptstyle LSR}$ (km s$^{-1}$)")
-    fig.savefig(f"vlsrdist_{glong[0]:.2f}_{velo[0]:.1f}_krige{use_kriging}_mc{resample}.pdf",
-                bbox_inches="tight")
+    figname = f"vlsrdist_{glong[0]:.2f}_{velo[0]:.1f}_krige{use_kriging}_mc{resample}"
+    if use_kriging:
+        figname += f"_norm{norm}"
+    fig.savefig(f"{figname}.pdf", bbox_inches="tight")
     plt.close(fig)
     # fig, ax = plt.subplots()
     # if resample and use_kriging:

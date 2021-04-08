@@ -134,7 +134,7 @@ def calc_gcen_coords(glong, glat, dist, R0=__R0,
     return x, y, Rgal, cos_az, sin_az
 
 
-def krige_UpecVpec(x, y):
+def krige_UpecVpec(x, y, norm=20):
     """
     Estimates the difference between individual peculiar motions
     and their averages at the given (x, y) position(s) using kriging.
@@ -142,6 +142,10 @@ def krige_UpecVpec(x, y):
     Parameters:
       x, y :: scalars or arrays of scalars
         Barycentric Cartesian positions (kpc)
+
+      norm :: scalar
+        Normalization factor that determines slope of kriging to average
+        peculiar motion transition. Larger norm is steeper transition
 
     Returns: Upec, Vpec
       Upec :: scalar or array of scalars
@@ -159,43 +163,56 @@ def krige_UpecVpec(x, y):
     #
     infile = os.path.join(os.path.dirname(__file__), "cw21_kde_krige.pkl")
     # infile contains: full KDE + KDEs of each component (e.g. "R0")
-    #                  + kriging objects + convex hull object
+    #                  + kriging objects + variance threshold + convex hull object
     with open(infile, "rb") as f:
         file = dill.load(f)
         Upec_krige = file["Upec_krige"]
         Vpec_krige = file["Vpec_krige"]
-        hull = file["hull"]
+        # hull = file["hull"]  # convex hull object
+        var_threshold = file["var_threshold"]  # sum of Upec/Vpec variances
         file = None  # free up resources
     #
     # Calculate expected Upec and Vpec differences at source location(s)
     #
     interp_pos = np.vstack((x.flatten(), y.flatten())).T
-    Upec, _ = Upec_krige.interp(interp_pos, resample=False)
-    Vpec, _ = Vpec_krige.interp(interp_pos, resample=False)
+    Upec_diff, Upec_diff_var = Upec_krige.interp(interp_pos, resample=False)
+    Vpec_diff, Vpec_diff_var = Vpec_krige.interp(interp_pos, resample=False)
+    # #
+    # # Use average value if component is outside convex hull
+    # # (i.e., difference is zero)
+    # #
+    # not_in_hull = hull.find_simplex(interp_pos) < 0
+    # Upec[not_in_hull] = 0
+    # Vpec[not_in_hull] = 0
     #
-    # Use average value if component is outside convex hull
-    # (i.e., difference is zero)
+    # Gaussian-like weighting function
     #
-    not_in_hull = hull.find_simplex(interp_pos) < 0
-    Upec[not_in_hull] = 0
-    Vpec[not_in_hull] = 0
+    var_tot = Upec_diff_var + Vpec_diff_var  # total variance (not in quadrature)
+    pec_weights = np.exp(norm * (var_threshold / var_tot - 1))
+    zero_weights = np.ones_like(pec_weights)
+    weights = np.vstack((pec_weights, zero_weights))
+    print("pec_weights.shape", np.shape(pec_weights))
+    print("weights.shape", np.shape(weights))
+    zero_diff = np.zeros_like(Upec_diff)
+    Upec_diff = np.average([Upec_diff, zero_diff], weights=weights, axis=0)
+    Vpec_diff = np.average([Vpec_diff, zero_diff], weights=weights, axis=0)
     #
     # Reshape
     #
-    Upec = Upec.reshape(np.shape(x))
-    Vpec = Vpec.reshape(np.shape(x))
+    Upec_diff = Upec_diff.reshape(np.shape(x))
+    Vpec_diff = Vpec_diff.reshape(np.shape(x))
     #
     # Free up resources
     #
-    Upec_krige = Vpec_krige = hull = None
+    Upec_krige = Vpec_krige = var_threshold = None
     #
     if input_scalar:
-      return Upec[0], Vpec[0]
-    return Upec, Vpec
+        return Upec_diff[0], Vpec_diff[0]
+    return Upec_diff, Vpec_diff
 
 
 def nominal_params(glong=None, glat=None, dist=None,
-                   use_kriging=False, resample=False):
+                   use_kriging=False, norm=20, resample=False):
     """
     Return a dictionary containing the nominal rotation curve
     parameters.
@@ -210,6 +227,10 @@ def nominal_params(glong=None, glat=None, dist=None,
       use_kriging :: boolean (optional)
         If True, estimate individual Upec & Vpec from kriging program
         If False, use average Upec & Vpec
+
+      norm :: scalar (optional)
+        Normalization factor that determines slope of kriging to average
+        peculiar motion transition. Larger norm is steeper transition
 
       resample :: boolean (optional)
         Boolean representing if kd program will MC sample parameters
@@ -226,7 +247,7 @@ def nominal_params(glong=None, glat=None, dist=None,
         x, y = calc_bary_coords(glong, glat, dist)
         # Calculate Upec and Vpec differences from their
         # averages at source location(s)
-        Upec, Vpec = krige_UpecVpec(x, y)
+        Upec, Vpec = krige_UpecVpec(x, y, norm=norm)
         if not resample:
             # Calculate actual Upec and Vpec
             Upec = Upec + __Upec
