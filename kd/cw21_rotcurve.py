@@ -2,8 +2,8 @@
 """
 cw21_rotcurve.py
 
-Utilities involving the Universal Rotation Curve (Persic 1996) from
-Cheng & Wenger (2021), henceforth CW21.
+Utilities involving the Universal Rotation Curve (Persic et al. 1996) from
+Wenger & Cheng (2021), henceforth CW21 (need to refactor everything to WC21).
 Including HMSFR peculiar motion.
 
 Copyright(C) 2017-2021 by
@@ -513,7 +513,7 @@ def calc_vlsr(glong, glat, dist,
     # Convert to IAU-LSR
     #
     vlsr = (
-        vbary + (__Ustd * cos_glong + __Vstd * sin_glong) * cos_glat + __Wsun * sin_glat
+        vbary + (__Ustd * cos_glong + __Vstd * sin_glong) * cos_glat + __Wstd * sin_glat
     )
     if is_print: print("final vlsr shape", np.shape(vlsr))
     if input_scalar:
