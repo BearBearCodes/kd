@@ -62,9 +62,9 @@ class Worker:
         #
         # Get nominal rotation curve parameters
         #
-        if rotcurve == "cw21_rotcurve":
+        if rotcurve == "wc21_rotcurve":
             # Load pickle file
-            infile = os.path.join(os.path.dirname(__file__), "cw21_kde_krige.pkl")
+            infile = os.path.join(os.path.dirname(__file__), "wc21_kde_krige.pkl")
             # infile contains: full KDE + KDEs of each component (e.g. "R0")
             #                  + kriging objects + variance threshold + convex hull object
             with open(infile, "rb") as f:
@@ -75,7 +75,7 @@ class Worker:
         elif not use_kriging:
             self.nominal_params = self.rotcurve_module.nominal_params()
         else:
-            raise ValueError("kriging is only supported for 'cw21_rotcurve'")
+            raise ValueError("kriging is only supported for 'wc21_rotcurve'")
 
     def work(self, snum):
         #
@@ -86,7 +86,7 @@ class Worker:
         # Resample velocity and rotation curve parameters
         #
         if self.resample:
-            if self.rotcurve == "cw21_rotcurve":
+            if self.rotcurve == "wc21_rotcurve":
                 params = self.rotcurve_module.resample_params(
                     self.kde, size=len(self.glong),
                     nom_params=self.nominal_params, use_kriging=self.use_kriging)
@@ -101,7 +101,7 @@ class Worker:
         #
         # Calculate LSR velocity at each (glong, distance) point
         #
-        if self.rotcurve == "cw21_rotcurve" or self.rotcurve == "reid19_rotcurve":
+        if self.rotcurve == "wc21_rotcurve" or self.rotcurve == "reid19_rotcurve":
             grid_vlsrs = self.rotcurve_module.calc_vlsr(
                 self.glong_grid, self.glat, self.dist_grid,
                 peculiar=self.peculiar, **params)
@@ -142,7 +142,7 @@ class Worker:
         near_dists[near_idxs == -1] = np.nan
         far_dists = self.dists[far_idxs]
         far_dists[far_idxs == -1] = np.nan
-        if self.rotcurve == "cw21_rotcurve":
+        if self.rotcurve == "wc21_rotcurve":
             # Include (potentially resampled) Zsun and roll values
             Rgal = kd_utils.calc_Rgal(
                 self.glong, self.glat, far_dists.T, R0=params['R0'],
@@ -158,7 +158,7 @@ class Worker:
         return (tan_dists, near_dists, far_dists, vlsr_tan, Rgal, Rtan)
 
 def rotcurve_kd(glong, glat, velo, velo_err=None, velo_tol=0.1,
-                rotcurve='cw21_rotcurve',
+                rotcurve='wc21_rotcurve',
                 dist_res=0.001, dist_min=0.001, dist_max=30.,
                 resample=False, size=1, processes=None,
                 peculiar=False, use_kriging=False, norm=20):
@@ -212,11 +212,11 @@ def rotcurve_kd(glong, glat, velo, velo_err=None, velo_tol=0.1,
         if None, automatically assign workers based on system's core count
 
       peculiar :: boolean (optional)
-        only supported for "cw21_rotcurve" and "reid19_rotcurve"
+        only supported for "wc21_rotcurve" and "reid19_rotcurve"
         if True, include HMSFR peculiar motion component
 
       use_kriging :: boolean (optional)
-        only supported for rotcurve = "cw21_rotcurve"
+        only supported for rotcurve = "wc21_rotcurve"
         if True, estimate individual Upec & Vpec from kriging program
         if False, use average Upec & Vpec
 

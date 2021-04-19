@@ -40,9 +40,10 @@ def calc_hpd_wrapper(args):
     """
     Multiprocessing wrapper from KDE results.
     """
+    # TODO: fix distance PDF to calculate HPD centred around tangent distance
     return calc_hpd(args[0], args[1], alpha=args[2], pdf_bins=args[3])
 
-def pdf_kd(glong, glat, velo, velo_err=None, rotcurve='cw21_rotcurve',
+def pdf_kd(glong, glat, velo, velo_err=None, rotcurve='wc21_rotcurve',
            rotcurve_dist_res=0.001, rotcurve_dist_max=30.,
            pdf_bins=1000, num_samples=10000, processes=None,
            plot_pdf=False, plot_prefix='pdf_',
@@ -96,11 +97,11 @@ def pdf_kd(glong, glat, velo, velo_err=None, rotcurve='cw21_rotcurve',
         The prefix for the plot filenames.
 
       peculiar :: boolean (optional)
-        Only supported for "cw21_rotcurve" and "reid19_rotcurve"
+        Only supported for "wc21_rotcurve" and "reid19_rotcurve"
         If True, include HMSFR peculiar motion component
 
       use_kriging :: boolean (optional)
-        Only supported for rotcurve = "cw21_rotcurve"
+        Only supported for rotcurve = "wc21_rotcurve"
         If True, estimate individual Upec & Vpec from kriging program
         If False, use average Upec & Vpec
 
@@ -234,6 +235,7 @@ def pdf_kd(glong, glat, velo, velo_err=None, rotcurve='cw21_rotcurve',
     pool.join()
     for kdtype, kdetype in zip(kdtypes, kdetypes):
         for i in np.ndindex(glong.shape):
+            # TODO: fix distance PDF to calculate HPD centred around tangent distance
             kde, mode, lower, upper = kde_results[nresult]
             results[kdtype][i] = mode
             results[kdtype+"_kde"][i] = kde

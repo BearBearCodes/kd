@@ -14,7 +14,7 @@ glong = np.random.normal(loc=30.0, scale=2.0, size=2)
 glat = np.random.normal(loc=0.0, scale=0.5, size=2)
 velo = np.random.normal(loc=20.0, scale=20.0, size=2)
 velo_err = 10.0
-rotcurve = "cw21_rotcurve"  # the name of the script containing the rotation curve
+rotcurve = "wc21_rotcurve"  # the name of the script containing the rotation curve
 num_samples = 10  # number of re-samples
 peculiar = True
 use_kriging = True
@@ -40,7 +40,7 @@ end = time.time()
 # # glat = np.array([1., 0.5])
 # # velo = np.array([20., 12.])
 # velo_tol = 0.1  # tolerance to determine a "match" between rotation curve and measured LSR velocity (km/s)
-# rotcurve = "cw21_rotcurve"  # the name of the script containing the rotation curve
+# rotcurve = "wc21_rotcurve"  # the name of the script containing the rotation curve
 # start = time.time()
 # dist = rotcurve_kd.rotcurve_kd(glong, glat, velo, velo_tol=velo_tol, rotcurve=rotcurve,
 #                                peculiar=True,

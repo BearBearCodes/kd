@@ -31,7 +31,7 @@ import pathos.multiprocessing as mp
 
 from kd import kd_utils
 
-# CW21 A6 best-fit parameters and errors
+# WC21 A6 best-fit parameters and errors
 __R0 = 8.1746    # kpc
 __R0_err = 0.026 # kpc
 __Zsun = 5.399   # pc

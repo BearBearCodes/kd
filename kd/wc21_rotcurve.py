@@ -1,12 +1,9 @@
 #!/usr/bin/env python
 """
-cw21_rotcurve_w_mc.py
+wc21_rotcurve.py
 
-* ONLY MEANT FOR MAKING VLSR DIFFERENCE & STANDARD DEVIATION PLOTS *
-The cw21_rotcurve.py file with MC resample parameter.
-
-Utilities involving the Universal Rotation Curve (Persic 1996) from
-Cheng & Wenger (2021), henceforth CW21.
+Utilities involving the Universal Rotation Curve (Persic et al. 1996) from
+Wenger & Cheng (2021), henceforth WC21.
 Including HMSFR peculiar motion.
 
 Copyright(C) 2017-2021 by
@@ -27,7 +24,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-2021-03-DD Isaac Cheng & Trey V. Wenger new in V___?
+2021-03-DD Isaac Cheng & Trey V. Wenger new in V3.0
 """
 
 import os
@@ -36,7 +33,7 @@ import numpy as np
 from kd import kd_utils
 
 #
-# CW21 A6 rotation model parameters
+# WC21 A6 rotation model parameters
 #
 __R0 = 8.1746
 __Usun = 10.879
@@ -137,7 +134,7 @@ def calc_gcen_coords(glong, glat, dist, R0=__R0,
     return x, y, Rgal, cos_az, sin_az
 
 
-def krige_UpecVpec(x, y, norm=20, krige_resample=False):
+def krige_UpecVpec(x, y, norm=20):
     """
     Estimates the difference between individual peculiar motions
     and their averages at the given (x, y) position(s) using kriging.
@@ -164,21 +161,29 @@ def krige_UpecVpec(x, y, norm=20, krige_resample=False):
     #
     # Load kriging objects and variance threshold
     #
-    infile = os.path.join(os.path.dirname(__file__), "cw21_kde_krige.pkl")
+    infile = os.path.join(os.path.dirname(__file__), "wc21_kde_krige.pkl")
     # infile contains: full KDE + KDEs of each component (e.g. "R0")
     #                  + kriging objects + variance threshold + convex hull object
     with open(infile, "rb") as f:
         file = dill.load(f)
         Upec_krige = file["Upec_krige"]
         Vpec_krige = file["Vpec_krige"]
+        # hull = file["hull"]  # convex hull object
         var_threshold = file["var_threshold"]  # sum of Upec/Vpec variances
         file = None  # free up resources
     #
     # Calculate expected Upec and Vpec differences at source location(s)
     #
     interp_pos = np.vstack((x.flatten(), y.flatten())).T
-    Upec_diff, Upec_diff_var = Upec_krige.interp(interp_pos, resample=krige_resample)
-    Vpec_diff, Vpec_diff_var = Vpec_krige.interp(interp_pos, resample=krige_resample)
+    Upec_diff, Upec_diff_var = Upec_krige.interp(interp_pos, resample=False)
+    Vpec_diff, Vpec_diff_var = Vpec_krige.interp(interp_pos, resample=False)
+    # #
+    # # Use average value if component is outside convex hull
+    # # (i.e., difference is zero)
+    # #
+    # not_in_hull = hull.find_simplex(interp_pos) < 0
+    # Upec[not_in_hull] = 0
+    # Vpec[not_in_hull] = 0
     #
     # Gaussian-like weighting function
     #
@@ -186,6 +191,8 @@ def krige_UpecVpec(x, y, norm=20, krige_resample=False):
     pec_weights = np.exp(norm * (var_threshold / var_tot - 1))
     zero_weights = np.ones_like(pec_weights)
     weights = np.vstack((pec_weights, zero_weights))
+    print("pec_weights.shape", np.shape(pec_weights))
+    print("weights.shape", np.shape(weights))
     zero_diff = np.zeros_like(Upec_diff)
     Upec_diff = np.average([Upec_diff, zero_diff], weights=weights, axis=0)
     Vpec_diff = np.average([Vpec_diff, zero_diff], weights=weights, axis=0)
@@ -205,7 +212,7 @@ def krige_UpecVpec(x, y, norm=20, krige_resample=False):
 
 
 def nominal_params(glong=None, glat=None, dist=None,
-                   use_kriging=False, norm=20, resample=False, krige_resample=False):
+                   use_kriging=False, norm=20, resample=False):
     """
     Return a dictionary containing the nominal rotation curve
     parameters.
@@ -240,7 +247,7 @@ def nominal_params(glong=None, glat=None, dist=None,
         x, y = calc_bary_coords(glong, glat, dist)
         # Calculate Upec and Vpec differences from their
         # averages at source location(s)
-        Upec, Vpec = krige_UpecVpec(x, y, norm=norm, krige_resample=krige_resample)
+        Upec, Vpec = krige_UpecVpec(x, y, norm=norm)
         if not resample:
             # Calculate actual Upec and Vpec
             Upec = Upec + __Upec
@@ -268,7 +275,7 @@ def nominal_params(glong=None, glat=None, dist=None,
 def resample_params(kde, size=None, nom_params=None, use_kriging=False):
     """
     Resample the rotation curve parameters within their
-    uncertainties using the CW21 kernel density estimator
+    uncertainties using the WC21 kernel density estimator
     to include parameter covariances.
 
     Parameters:
@@ -353,7 +360,7 @@ def calc_theta(R, a2=__a2, a3=__a3, R0=__R0):
         Galactocentric radius (kpc)
 
       a2, a3 :: scalars (optional)
-        CW21 rotation curve parameters
+        WC21 rotation curve parameters
 
       R0 :: scalar (optional)
         Solar Galactocentric radius (kpc)
@@ -409,7 +416,7 @@ def calc_vlsr(glong, glat, dist,
         Solar Galactocentric radius (kpc)
 
       Usun, Vsun, Wsun, Upec, Vpec, a2, a3 :: scalars (optional)
-        CW21 rotation curve parameters
+        WC21 rotation curve parameters
 
       Zsun :: scalar (optional)
         Height of sun above Galactic midplane (pc)
@@ -506,7 +513,7 @@ def calc_vlsr(glong, glat, dist,
     # Convert to IAU-LSR
     #
     vlsr = (
-        vbary + (__Ustd * cos_glong + __Vstd * sin_glong) * cos_glat + __Wsun * sin_glat
+        vbary + (__Ustd * cos_glong + __Vstd * sin_glong) * cos_glat + __Wstd * sin_glat
     )
     if is_print: print("final vlsr shape", np.shape(vlsr))
     if input_scalar:
