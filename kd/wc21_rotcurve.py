@@ -197,6 +197,11 @@ def krige_UpecVpec(x, y, norm=20):
     Upec_diff = np.average([Upec_diff, zero_diff], weights=weights, axis=0)
     Vpec_diff = np.average([Vpec_diff, zero_diff], weights=weights, axis=0)
     #
+    # Multiply kriging by some factor
+    #
+    Upec_diff = Upec_diff * 2
+    Vpec_diff = Vpec_diff * 2
+    #
     # Reshape
     #
     Upec_diff = Upec_diff.reshape(np.shape(x))
