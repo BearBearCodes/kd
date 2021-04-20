@@ -199,8 +199,8 @@ def krige_UpecVpec(x, y, norm=20):
     #
     # Multiply kriging by some factor
     #
-    Upec_diff = Upec_diff * 2
-    Vpec_diff = Vpec_diff * 2
+    Upec_diff = Upec_diff * 3
+    Vpec_diff = Vpec_diff * 3
     #
     # Reshape
     #
