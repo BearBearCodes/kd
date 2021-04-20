@@ -510,11 +510,10 @@ def calc_vlsr(glong, glat, dist,
     vbary = (X * vXh + Y * vYh + Z * vZh) / dist
     if is_print: print("vbary in calc_vlsr", np.shape(vbary))
     #
-    # Convert to IAU-LSR
+    # Convert to revised LSR velocity (eq. 5 of Wenger et al. 2018)
+    # N.B. V_helio in eq. 5 is simply vbary
     #
-    vlsr = (
-        vbary + (__Ustd * cos_glong + __Vstd * sin_glong) * cos_glat + __Wstd * sin_glat
-    )
+    vlsr = vbary + (Usun * cos_glong + Vsun * sin_glong) * cos_glat + Wsun * sin_glat
     if is_print: print("final vlsr shape", np.shape(vlsr))
     if input_scalar:
         return vlsr[0]
