@@ -360,7 +360,7 @@ def calc_anderson2012_uncertainty(glong, vlsr):
         return (near_err[0], far_err[0], tangent_err[0])
     return (near_err, far_err, tangent_err)
 
-def calc_hpd(samples, kdetype, center=None, alpha=0.683, pdf_bins=1000):
+def calc_hpd(samples, kdetype, alpha=0.683, pdf_bins=1000):
     """
     Fit a kernel density estimator (KDE) to the posterior given
     by a collection of samples. Return the mode (posterior peak)
@@ -377,10 +377,6 @@ def calc_hpd(samples, kdetype, center=None, alpha=0.683, pdf_bins=1000):
         Which KDE method to use
           'pyqt' uses pyqt_fit with boundary at 0
           'scipy' uses gaussian_kde with no boundary
-
-      center :: scalar (optional)
-        The value around which the BCI will be calculated. If None,
-        use the mode of the distribution.
 
       alpha :: scalar (optional)
         The fraction of samples included in the BCI.
@@ -432,11 +428,7 @@ def calc_hpd(samples, kdetype, center=None, alpha=0.683, pdf_bins=1000):
     #
     # Get the location of the mode
     #
-    if center is not None:
-        # ! This is not how the HPD is calculated...
-        mode = center
-    else:
-        mode = xdata[np.argmax(pdf)]
+    mode = xdata[np.argmax(pdf)]
     if np.isnan(mode):
         return (None, np.nan, np.nan, np.nan)
     #
